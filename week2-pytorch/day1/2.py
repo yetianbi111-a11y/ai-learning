@@ -27,4 +27,4 @@ tensor3 = torch.tensor([[1,2],[3,4]])
 tensor4 = torch.tensor([[5,6],[7,8]])
 print(tensor3 * tensor4) #对应元素相乘
 print(tensor3.mul(tensor4)) 
-print(tensor3.matmul(tensor4)) #矩阵乘法
+print(tensor3.matmul(tensor4)) #矩阵乘法 tensor3.mm(tensor4) #矩阵乘法,tensor3 @ tensor4 #矩阵乘法

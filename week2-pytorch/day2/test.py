@@ -36,7 +36,7 @@ for epoch in range(epoch_num):
 
         optimier.step()#自动更新
 
-        optimier.zero_grad()
+        optimier.zero_grad()#优化器不累加梯度
     loss_list.append(total_loss/iter_num)
 
 print(model.weight)

@@ -58,5 +58,13 @@ for name, param in model.named_parameters():
 
 #使用nn.Sequential()
 model = nn.Sequential(
-    
+    nn.Linear(5,10),
+    nn.ReLU(),
+    nn.Linear(10,2)
 )
+
+x = torch.randn(2,5)
+
+output = model(x)
+print(output)
+print(output.shape)

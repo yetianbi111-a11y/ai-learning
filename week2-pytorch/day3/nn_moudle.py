@@ -8,7 +8,7 @@ class Model(nn.Module):
     def __init__(self):
         super().__init__()  #初始化父类
         self.linear1 = nn.Linear(3,4)
-        nn.init.xavier_normal_(self.linear1.weight)
+        nn.init.xavier_normal_(self.linear1.weight)#初始化参数
         self.tanh = nn.Tanh()
         self.linear2 = nn.Linear(4,4)
         nn.init.kaiming_normal_(self.linear2.weight)

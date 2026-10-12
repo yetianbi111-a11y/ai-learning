@@ -15,8 +15,8 @@ y_train = torch.tensor([train_ds[i][1] for i in range(len(train_ds))])
 """
 #loader = DataLoader(train_ds,batch_size=len(train_ds),shuffle=False)
 #归一化
-x_train, y_train = train_ds.data.unsqueeze(1).float()/255.0, train_ds.targets
-x_test = test_ds.data.unsqueeze(1).float()/255.0
+x_train, y_train = train_ds.data.unsqueeze(1).float(), train_ds.targets
+x_test = test_ds.data.unsqueeze(1).float()
 y_test = test_ds.targets
 print(x_train.shape,y_train.shape)
 print(x_test.shape,y_test.shape)

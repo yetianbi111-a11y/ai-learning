@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class get_model(nn.Module):
-    def __init__(self,):
+    def __init__(self,num_classes=10):#可以通过参数指定分类数，提高用于其他数据集的适应性
         super().__init__()
         self.feature = nn.Sequential(
         #单个数据是维度是 (1,28,28),所以输入通道数是 1
@@ -18,7 +18,7 @@ class get_model(nn.Module):
         nn.ReLU(),
         nn.Linear(120, 84),
         nn.ReLU(),
-        nn.Linear(84, 10)
+        nn.Linear(84, num_classes)
         )
     def forward(self,x):
         return self.feature(x)

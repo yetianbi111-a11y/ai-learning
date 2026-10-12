@@ -1,4 +1,5 @@
-projects/fashion_mnist_cnn/
+# projects/fashion_mnist_cnn/
+
 data.py
 model.py
 train.py

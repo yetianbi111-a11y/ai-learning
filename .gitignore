@@ -1,1 +1,7 @@
 ye1/
+# 忽略模型权重文件
+*.pth
+
+# 忽略 CIFAR-10 数据集文件夹
+week5_projects/CIFAR-10/cifar-10-python/
+week5_projects/CIFAR-10/cifar-10-python.tar.gz

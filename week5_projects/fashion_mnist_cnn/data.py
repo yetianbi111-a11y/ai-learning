@@ -7,7 +7,7 @@ CLASS_NAMES = [
 ]
 
 def data_datasets(root="./data", val_ratio=0.1, seed=42):#固定随机种子，每次划分的训练集和验证集相同
-    train_ds = datasets.FashionMNIST(root=root,train=True,download=True,transform=transforms.ToTensor())#已经缩放
+    train_ds = datasets.FashionMNIST(root=root,train=True,download=True,transform=transforms.ToTensor())#已经缩放（0-1）
     test_ds = datasets.FashionMNIST(root=root,train=False,download=True,transform=transforms.ToTensor())
 
     #划分训练集和验证集

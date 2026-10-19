@@ -41,7 +41,7 @@ def main(args):
     device = torch.device("cuda" if  torch.cuda.is_available() else "cpu")
 
     model = get_model(num_classes=10).to(device)
-    train_loader,val_loader,test_loader = get_data_loaders(root=args.data_dir,batch_size=args.batch_size)
+    train_loader,val_loader,_ = get_data_loaders(root=args.data_dir,batch_size=args.batch_size)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(),lr=args.lr)

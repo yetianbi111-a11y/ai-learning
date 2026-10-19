@@ -12,9 +12,9 @@ def collect_predictions(model,loader,decive):
         for x,y in loader:
             x = x.to(decive)
             logits = model(x)
-            pred = logits.argmax(dim=1).cpu()
+            pred = logits.argmax(dim=1).cpu()#默认在GPu
             all_preds.append(pred)
-            all_labels.append(y)
+            all_labels.append(y)#默认在cpu
 
     return torch.cat(all_preds),torch.cat(all_labels)
 

@@ -37,10 +37,9 @@ def evaluate(model,val_loader,loss_fn,device):
             x,y = x.to(device),y.to(device)
             y_pred = model(x)
             loss = loss_fn(y_pred,y)
-            loss.backward()
             logist = y_pred.argmax(dim=1)
-        total_loss += loss.item()*x.shape[0]
-        total_acc += logist.eq(y).sum().item()
+            total_loss += loss.item()*x.shape[0]
+            total_acc += logist.eq(y).sum().item()
 
     return total_loss/len(val_loader.dataset),total_acc/len(val_loader.dataset)
 
@@ -91,7 +90,7 @@ def main(args):
         start = time.perf_counter()
         train_loss,train_acc = one_epoch(model,train_loader,optimizer,loss_fn,device)
         val_loss,val_acc = evaluate(model,val_loader,loss_fn,device)
-        print(f"Epoch {epoch+1}/{args.epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
+        print(f"Epoch {epoch+1}/{args.epoch_num}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
         if device.type == "cuda":
             torch.cuda.synchronize(device)
         elapsed = time.perf_counter() - start
@@ -128,7 +127,7 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--data_dir", default="week5_projects/CIFAR-10/cifar-10-python/cifar-10-batches-py")
-    p.add_argument("--out_dir", default="week5_projects/CIFAR-10/outputs")
+    p.add_argument("--out_dir", default="week6_RestNet/CIFAR_10_resnet/outputs")
     p.add_argument("--epoch-num", type=int, default=20)
     p.add_argument("--batch_size", type=int, default=64)
     p.add_argument("--lr", type=float, default=1e-3)

@@ -10,6 +10,12 @@ from data import get_dataloader
 from model import ResNet18
 import argparse
 
+def set_seed(seed=42):
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
 def one_epoch(model,epoch_loader,optimizer,loss_fn,device):
     model.train()
     total_loss = 0.0
@@ -45,13 +51,9 @@ def evaluate(model,val_loader,loss_fn,device):
 
 def main(args):
     os.makedirs(args.out_dir, exist_ok=True)
-    
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(args.seed)
+
+    set_seed(args.seed)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config = vars(args).copy()  # 把命令行参数转换成字典
     config["device"] = str(device)
@@ -78,6 +80,11 @@ def main(args):
             "val_acc",
             "elapsed_seconds",
         ])
+
+    #保留结果观察图像
+    history = {"train_loss": [],"val_loss": [],"train_acc": [],"val_acc": [],}
+
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = ResNet18().to(device)
     loss_fn = nn.CrossEntropyLoss()
@@ -119,17 +126,24 @@ def main(args):
                 ckpt_path
             )
             print(f"  ↳ Saved best model (acc={best_acc:.4f}) to {ckpt_path}")
+        history["train_loss"].append(train_loss)
+        history["val_loss"].append(val_loss)
+        history["train_acc"].append(train_acc)
+        history["val_acc"].append(val_acc)
     print(f"[Done] Best val acc: {best_acc:.4f}")
+    history_path = os.path.join(args.out_dir, "history.json")
+    with open(history_path, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
 
 
 def parse_args():
     
     p = argparse.ArgumentParser()
     p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--data_dir", default="week5_projects/CIFAR-10/cifar-10-python/cifar-10-batches-py")
+    p.add_argument("--data_dir", default="week6_RestNet/CIFAR_10_resnet/data/cifar-10-batches-py")
     p.add_argument("--out_dir", default="week6_RestNet/CIFAR_10_resnet/outputs")
-    p.add_argument("--epoch-num", type=int, default=20)
-    p.add_argument("--batch_size", type=int, default=64)
+    p.add_argument("--epoch-num", type=int, default=15)
+    p.add_argument("--batch_size", type=int, default=128)
     p.add_argument("--lr", type=float, default=1e-3)
     return p.parse_args()
 

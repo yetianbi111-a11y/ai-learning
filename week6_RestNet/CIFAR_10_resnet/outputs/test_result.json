@@ -1,0 +1,7 @@
+{
+  "checkpoint": "week6_RestNet/CIFAR_10_resnet/outputs/best_model.pth",
+  "epoch": 16,
+  "val_acc": 0.8385,
+  "test_acc": 0.8295,
+  "batch_size": 256
+}

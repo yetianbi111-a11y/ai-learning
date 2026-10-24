@@ -5,3 +5,4 @@ ye1/
 # 忽略 CIFAR-10 数据集文件夹
 week5_projects/CIFAR-10/cifar-10-python/
 week5_projects/CIFAR-10/cifar-10-python.tar.gz
+week6_RestNet/CIFAR_10_resnet/data

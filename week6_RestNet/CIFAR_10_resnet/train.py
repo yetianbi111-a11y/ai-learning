@@ -68,7 +68,7 @@ def main(args):
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
     
-        metrics_path = os.path.join(args.out_dir, "metrics.csv")
+    metrics_path = os.path.join(args.out_dir, "metrics.csv")
     
     with open(metrics_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)

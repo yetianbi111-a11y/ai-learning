@@ -1,3 +1,4 @@
+import os
 import argparse
 import json
 import random
@@ -26,12 +27,14 @@ def get_dataloaders(root="./data",batch_size=64,num_workers=16):
     std = (0.229, 0.224, 0.225)
     #数据增强，进行水平翻转
     train_transform = transforms.Compose([
+        transforms.Resize((224,224)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean,std)
-    ])
+    ])#数据转换的对象，用在DataSet中
 
     eval_transform = transforms.Compose([
+        transforms.Resize((224,224)),
         transforms.ToTensor(),
         transforms.Normalize(mean, std),
     ])
@@ -41,7 +44,7 @@ def get_dataloaders(root="./data",batch_size=64,num_workers=16):
     test_dataset = datasets.CIFAR10(root=root,train=False,download=True,transform=eval_transform)
 
     generator = torch.Generator().manual_seed(42)
-    indices = torch.randperm(len(train_dataset), generator=generator).tolist() #生成 0 到 n-1 的一个随机排列
+    indices = torch.randperm(len(train_dataset), generator=generator).tolist() #生成 0 到 n-1 的一个随机排列，一维张量
     val_indices   = indices[:5000]#验证为前5000个数据
     train_indices = indices[5000:]#训练为后45000个数据
 
@@ -64,26 +67,32 @@ def get_dataloaders(root="./data",batch_size=64,num_workers=16):
 
 def build_model(mode,device):
     model = resnet18(weights=ResNet18_Weights.DEFAULT)
+    #改变输入
+    """
     model.conv1= nn.Conv2d(3,64,kernel_size=3,stride=1,padding=1,bias=False)
     model.maxpool = nn.Identity()
-    in_features = model.fc.in_features  #全连接层的输入维度
-    model.fc = nn.Linear(in_features,10)
     """
 
-    
+    in_features = model.fc.in_features  #全连接层的输入维度
+    model.fc = nn.Linear(in_features,10)
+
     for param in model.parameters():
         param.requires_grad = False #冻结后面不需要更新参数
 
-    for param in model.conv1.parameters():
-        param.requires_grad = True
-    for param in model.fc.parameters():
-        param.requires_grad = True #解分类头冻结
+    if mode =='A':#训练分类头
+        for param in model.fc.parameters():
+            param.requires_grad = True #解分类头冻结
 
-    if mode=='B':
+    elif mode=='B':#训练layer4，和分类头
+        for param in model.fc.parameters():
+            param.requires_grad = True
         for param in model.layer4.parameters():
             param.requires_grad = True
+
+    elif mode=='C':#全量微调
+        for param in model.parameters():
+            param.requires_grad = True
             
-    """
     model = model.to(device)
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(
@@ -99,16 +108,20 @@ def build_model(mode,device):
     return model
 
 def run_epoch(model, loader, criterion, device, optimizer=None):
-    is_train = optimizer is not None
+    is_train = optimizer is not None #判断是训练还是推理
     model.train() if is_train else model.eval()
 
     total_loss = 0.0
     total_correct = 0
     total_samples = 0
 
-    scaler_enabled = device.type == "cuda"
-    scaler = GradScaler(device, enabled=scaler_enabled)
+    scaler_enabled = device.type == "cuda"  #使用混合精度
+    scaler = GradScaler(device, enabled=scaler_enabled)  #GradScaler 解决 fp16 梯度下溢：放大 loss 再反传，更新前再缩回。
 
+    before = {
+        name: param.detach().clone()
+        for name, param in model.named_parameters()
+        }
     with torch.set_grad_enabled(is_train):
         for images, labels in loader:
             images = images.to(
@@ -148,7 +161,10 @@ def run_epoch(model, loader, criterion, device, optimizer=None):
             ).sum().item()
 
             total_samples += batch_size
-
+    for name, param in model.named_parameters():
+        changed = not torch.equal(before[name], param.detach())
+        if changed:
+            print("发生更新:", name)
     avg_loss = total_loss / total_samples
     accuracy = 100.0 * total_correct / total_samples
 
@@ -160,7 +176,7 @@ def main():
 
     parser.add_argument(
         "--mode",
-        choices=["A", "B"],
+        choices=["A", "B","C"],
         required=True,
     )
 
@@ -175,7 +191,6 @@ def main():
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )
-
     print("使用设备:", device)
 
     if device.type == "cuda":
@@ -189,7 +204,7 @@ def main():
     model = build_model(args.mode, device)
 
     criterion = nn.CrossEntropyLoss()
-    """
+
     if args.mode == "A":
         # 只训练分类头
         optimizer = AdamW(
@@ -200,7 +215,7 @@ def main():
 
         experiment_name = "A_head_only"
 
-    else:
+    elif args.mode =='B':
         # layer4 使用较小学习率，分类头使用较大学习率
         optimizer = AdamW(
             [
@@ -217,24 +232,25 @@ def main():
         )
 
         experiment_name = "B_layer4_fc"
-"""
-    optimizer = AdamW(
-    [
-        {
-            "params": [
-                p for name, p in model.named_parameters()
-                if not name.startswith("fc.")
-            ],
-            "lr": 1e-4,
-        },
-        {
-            "params": model.fc.parameters(),
-            "lr": 1e-3,
-        },
-    ],
-    weight_decay=1e-4,
-    )
-    experiment_name = "all_layer"
+    elif args.mode =='C':
+        optimizer = AdamW(
+        [
+            {
+                "params": [
+                    p for name, p in model.named_parameters()
+                    if not name.startswith("fc.")
+                ],
+                "lr": 1e-4,
+            },
+            {
+                "params": model.fc.parameters(),
+                "lr": 1e-3,
+            },
+        ],
+        weight_decay=1e-4,
+        )
+        experiment_name = "all_layer"
+
     output_dir = Path("experiments") / experiment_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -301,6 +317,17 @@ def main():
                 model.state_dict(),
                 output_dir / "best_model.pth",
             )
+     #保留实验信息：
+        config = vars(args).copy()  # 把命令行参数转换成字典
+        config["device"] = str(device)
+        config["gpu_name"] = (
+        torch.cuda.get_device_name(device)
+        if device.type == "cuda"
+        else None
+            )
+        config["leaning"]= "s"    
+        with open(output_dir / "config.json", "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
 
     # 保存训练记录
     with open(

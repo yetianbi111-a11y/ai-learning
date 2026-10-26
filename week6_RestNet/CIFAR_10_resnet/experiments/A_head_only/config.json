@@ -1,0 +1,9 @@
+{
+  "mode": "A",
+  "epochs": 10,
+  "batch_size": 512,
+  "data_dir": "./data",
+  "device": "cuda",
+  "gpu_name": "NVIDIA GeForce RTX 3090",
+  "leaning": "s"
+}

@@ -15,7 +15,7 @@ class BasicBlock(nn.Module):
             kernel_size=3,
             stride=stride,
             padding=1,
-            bias=False
+            bias=False   #后面有batchNorm不需要这个偏置参数，w权重正常更新
         )
         self.bn1 = nn.BatchNorm2d(out_channels)
 
@@ -83,7 +83,7 @@ class ResNet18(nn.Module):
 
     def _make_layer(self,out_channels,blocks,stride):
         layers = []
-#可能需要下采样
+        #可能需要下采样
         layers.append(
             BasicBlock(
                 self.in_channels,
@@ -113,7 +113,7 @@ class ResNet18(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
 
-        x = self.avgpool(x)
+        x = self.avgpool(x) #[B, C, 1, 1]
 
         x = torch.flatten(x, 1)
 

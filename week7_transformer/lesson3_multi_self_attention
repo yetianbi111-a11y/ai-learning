@@ -1,0 +1,72 @@
+import math
+import torch
+import torch.nn as nn
+
+class MultiHeadSelfAttention(nn.Module):
+    def __init__(self,d_model,num_heads):
+        super().__init__()
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.head_dim = d_model // num_heads
+
+        assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
+
+        self.W_q = nn.Linear(d_model,d_model)
+        self.W_k = nn.Linear(d_model,d_model)
+        self.W_v = nn.Linear(d_model,d_model)
+        self.W_o = nn.Linear(d_model,d_model)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self,x):
+        batch_size, seq_len, _ = x.size()
+
+        # 1. 线性变换
+        Q = self.W_q(x)
+        K = self.W_k(x)
+        V = self.W_v(x)
+
+        # 2. 分头
+        Q = Q.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2) #view() 用于改变张量的形状
+        K = K.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        V = V.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+
+        # 3. 计算注意力分数
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.head_dim)#将后两个维度进行转置，方便计算点积
+        attention_weights = self.softmax(scores)
+
+        # 4. 加权求和
+        output = torch.matmul(attention_weights, V)
+
+        # 5. 合并头
+        output = output.transpose(1, 2).contiguous().view(batch_size, seq_len, self.d_model)
+
+        # 6. 输出线性变换
+        output = self.W_o(output)
+
+        return output, attention_weights
+
+def main():
+    torch.manual_seed(42)
+    batch_size = 2
+    seq_len = 4
+    d_model = 128
+    num_heads = 8
+
+    x = torch.rand(batch_size, seq_len, d_model)
+
+    output, attention_weights = MultiHeadSelfAttention(d_model, num_heads)(x)
+
+    print("Input shape:", x.shape)
+    print("Output shape:", output.shape)
+    print("Attention weights shape:", attention_weights.shape)
+
+    # 查看第一个样本的注意力权重
+    print("\nAttention weights of sample 0:")
+    print(attention_weights[0].detach())
+
+    # 检查每一行的权重之和是否为 1
+    print("\nSum of each attention row:")
+    print(attention_weights[0].sum(dim=-1).detach())
+
+if __name__ == "__main__":
+    main()

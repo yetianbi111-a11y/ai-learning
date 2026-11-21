@@ -4,12 +4,12 @@ import torch.optim as optim
 import os
 import json
 
-from dataset import get_batch
+from dataset import chars,get_batch
 from model import TinyGpt
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-vocab_size = 65
+vocab_size = len(chars)
 
 seq_len = 128
 batch_size = 64
@@ -19,13 +19,14 @@ num_heads = 8
 num_layer = 4
 d_ff = 512
 
-model = TinyGpt(
-    vocab_size=vocab_size,
-    d_model=d_model,
-    num_heads=num_heads,
-    num_layer=num_layer,
-    d_ff=d_ff
-)
+model_config = {
+    "vocab_size": vocab_size,
+    "d_model": d_model,
+    "num_heads": num_heads,
+    "num_layer": num_layer,
+    "d_ff": d_ff
+}
+model = TinyGpt(**model_config)
 
 model.to(device)
 
@@ -53,8 +54,8 @@ def TinyGpt_eval():
 
 def TinyGpt_train():
     model.train()
-
-    for epoch in range(epochs):
+    best_eval_loss = float('inf')
+    for epoch in range(epochs): #epoch不准确，应该理解成是step，与之前的epoch概念不一样
         x, y = get_batch('train', batch_size, seq_len, device)
         x = x.to(device)
         y = y.to(device)
@@ -67,6 +68,7 @@ def TinyGpt_train():
         optimizer.step()
         if (epoch + 1) % 100 == 0:
             eval_loss = TinyGpt_eval()
+            model.train()
             history["train_loss"].append(loss.item())
             history["val_loss"].append(eval_loss)
             print(
@@ -74,6 +76,19 @@ def TinyGpt_train():
                 f"Loss: {loss.item():.4f}, "
                 f"Eval Loss: {eval_loss:.4f}"
             )
+            if eval_loss < best_eval_loss:
+                best_eval_loss = eval_loss
+                ckpt_path = os.path.join("outputs", "best_model.pth")
+                torch.save({
+                    "model_state": model.state_dict(),
+                    "model_config": model_config,
+                    "chars": chars,
+                    "seq_len": seq_len,
+                    "step": epoch + 1,
+                    "val_loss": eval_loss
+                }, ckpt_path)
+                print(f"  ↳ Saved best model (eval_loss={best_eval_loss:.4f}) to {ckpt_path}")
+
     history_path = os.path.join("outputs", "history.json")
     with open(history_path, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)

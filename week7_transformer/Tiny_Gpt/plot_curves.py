@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 with open("outputs/history.json", "r", encoding="utf-8") as f:
     history = json.load(f)
 
-epochs = range(1, len(history["train_loss"]) + 1)
+epochs = range(1*100, (len(history["train_loss"]) + 1)*100, 100) #步长100
 
 plt.figure()
 plt.plot(epochs, history["train_loss"], label="Train Loss")
